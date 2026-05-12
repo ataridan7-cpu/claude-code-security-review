@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
-import * as Notifications from 'expo-notifications';
 import { getDatabase } from '../src/services/storage/DatabaseService';
 import { ClaudeService } from '../src/services/claude/ClaudeService';
-import { NotificationService } from '../src/services/notifications/NotificationService';
-import { MindfulMoment } from '../src/services/notifications/MindfulMoment';
 import { Colors } from '../src/constants/theme';
 
 const queryClient = new QueryClient({
@@ -21,33 +18,17 @@ const queryClient = new QueryClient({
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
-  const router = useRouter();
-
-  // Route to the correct screen when the user taps a notification
-  const lastResponse = Notifications.useLastNotificationResponse();
-  useEffect(() => {
-    const route = lastResponse?.notification.request.content.data?.route as string | undefined;
-    if (route) router.push(route as never);
-  }, [lastResponse]);
 
   useEffect(() => {
     async function init() {
+      // Initialize SQLite
       await getDatabase();
+      // Check for API key
       const keyExists = await ClaudeService.hasApiKey();
       setHasApiKey(keyExists);
-
-      // Schedule recurring notifications and start doom-scroll detection
-      const hasPermission = await NotificationService.hasPermission();
-      if (hasPermission) {
-        await NotificationService.scheduleRecurring();
-        MindfulMoment.start();
-      }
-
       setIsReady(true);
     }
     init();
-
-    return () => MindfulMoment.stop();
   }, []);
 
   if (!isReady) return null;
