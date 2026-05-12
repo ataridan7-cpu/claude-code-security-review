@@ -21,12 +21,3 @@ Their most-used category this week: ${topCategory}
 
 Write a 3-sentence insight about what these patterns reveal. Be specific about which categories help vs. hurt their mood. Make one practical, personalized suggestion based on the strongest signal. Do not list bullet points — write as flowing prose. Under 100 words.`;
 }
-
-export function buildMindfulMomentPrompt(
-  appName: string,
-  continuousMinutes: number
-): string {
-  return `The user has been on ${appName} for ${continuousMinutes} minutes straight.
-
-Write a single, gentle mindful interruption (1–2 sentences). Something that creates a moment of awareness without shaming. Pose a simple question they can answer right now. Examples of good tone: "What brought you here — and what might you actually need right now?" Not: "Put down your phone!" Under 30 words.`;
-}

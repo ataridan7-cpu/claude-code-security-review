@@ -162,7 +162,7 @@ export type InsightType =
   | 'weekly_letter'
   | 'mood_correlation'
   | 'goal_progress'
-  | 'mindful_moment'
+
   | 'detox_guidance';
 
 export type InsightSentiment = 'positive' | 'negative' | 'neutral';

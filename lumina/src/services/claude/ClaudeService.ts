@@ -38,7 +38,7 @@ import {
   buildInterruptionRecoveryPrompt,
   buildFocusCompletionPrompt,
 } from './prompts/focusPrompts';
-import { buildMoodCorrelationPrompt, buildMindfulMomentPrompt } from './prompts/moodPrompts';
+import { buildMoodCorrelationPrompt } from './prompts/moodPrompts';
 import { buildGoalInterpretationPrompt } from './prompts/goalPrompts';
 import { buildDetoxProgramPrompt } from './prompts/detoxPrompts';
 import { buildFamilyWisdomPrompt } from './prompts/familyPrompts';
@@ -350,25 +350,6 @@ class ClaudeServiceClass {
     }
 
     return { toolName, toolInput, conversationalText };
-  }
-
-  // ── Feature: Mindful Moment (streaming) ───────────────────────────────────
-
-  async *streamMindfulMoment(
-    appName: string,
-    continuousMinutes: number
-  ): AsyncGenerator<string> {
-    const prompt = buildMindfulMomentPrompt(appName, continuousMinutes);
-    const systemBlocks: Anthropic.TextBlockParam[] = [
-      { type: 'text', text: LUMINA_BASE_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } as any },
-    ];
-    yield* this.streamText(
-      CLAUDE_MODELS.fast,
-      systemBlocks,
-      prompt,
-      TOKEN_LIMITS.mindful_moment,
-      'mindful_moment'
-    );
   }
 
   // ── Feature: Mood Correlation (streaming) ─────────────────────────────────

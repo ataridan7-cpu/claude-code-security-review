@@ -1,4 +1,4 @@
-import { DailyScreenTimeSummary, MoodEntry, MoodCorrelation, AppCategory } from '../models';
+import { DailyScreenTimeSummary, MoodEntry, AppCategory } from '../models';
 
 /**
  * Local (offline) computation of usage patterns before sending to Claude.
@@ -45,19 +45,6 @@ export function computeMoodCorrelations(
       sampleSize: scores.length,
     }))
     .sort((a, b) => b.sampleSize - a.sampleSize);
-}
-
-/**
- * Detects if the user is in a potential "doom-scroll" state:
- * >30 min continuous usage on a social/entertainment/news app.
- */
-export function detectDoomScrollSession(
-  bundleId: string,
-  categoryId: AppCategory,
-  continuousMinutes: number
-): boolean {
-  const triggerCategories: AppCategory[] = ['social', 'entertainment', 'news'];
-  return triggerCategories.includes(categoryId) && continuousMinutes >= 30;
 }
 
 /**

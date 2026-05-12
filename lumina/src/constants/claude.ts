@@ -3,7 +3,7 @@ export const CLAUDE_MODELS = {
   premium: 'claude-opus-4-7',
   // Balanced quality + speed — daily insight, goals, detox, family, journal
   standard: 'claude-sonnet-4-6',
-  // Sub-second first token — focus companion, mindful moment, app swap
+  // Sub-second first token — focus companion, app swap
   fast: 'claude-haiku-4-5',
 } as const;
 
@@ -13,7 +13,7 @@ export const TOKEN_LIMITS = {
   weekly_letter: 1200,
   mood_correlation: 800,
   goal_progress: 400,
-  mindful_moment: 200,
+
   detox_guidance: 1500,
   goal_coach: 400,
   focus_companion: 150,
