@@ -15,6 +15,7 @@ import { InsightCardSkeleton, LoadingSkeleton } from '../../../src/components/co
 import { useTodayScreenTime, useSyncScreenTime } from '../../../src/hooks/useScreenTime';
 import { useActiveGoals } from '../../../src/hooks/useGoals';
 import { useMoodStore } from '../../../src/stores/moodStore';
+import { detectHeavySession } from '../../../src/analytics/PatternAnalyzer';
 import { Colors, Typography, Spacing, Radius } from '../../../src/constants/theme';
 
 export default function DashboardScreen() {
@@ -28,6 +29,11 @@ export default function DashboardScreen() {
 
   const dailyGoal = goals.find((g) => g.goalType === 'daily_max');
   const goalSeconds = dailyGoal?.dailyLimitSeconds;
+
+  // Find the heaviest single-app session today (≥2 hours) to prompt reflection
+  const heavyApp = summary?.topApps.find((app) =>
+    detectHeavySession(app.totalSeconds / 60)
+  );
 
   return (
     <ScrollView
@@ -87,6 +93,23 @@ export default function DashboardScreen() {
         </View>
       )}
 
+      {/* Heavy-session reflection prompt */}
+      {heavyApp && (
+        <Pressable
+          style={styles.reflectPrompt}
+          onPress={() =>
+            router.push(
+              `/context-journal/today?appName=${encodeURIComponent(heavyApp.appName)}&durationMinutes=${Math.round(heavyApp.totalSeconds / 60)}`
+            )
+          }
+        >
+          <Text style={styles.reflectTitle}>Reflect on your {heavyApp.appName} session</Text>
+          <Text style={styles.reflectSub}>
+            {Math.round(heavyApp.totalSeconds / 60)} min today · Tap to journal with Lumina →
+          </Text>
+        </Pressable>
+      )}
+
       {/* Focus shortcut */}
       <Pressable
         style={styles.focusBtn}
@@ -142,4 +165,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   focusBtnText: { ...Typography.body, fontWeight: '600', color: Colors.background },
+  reflectPrompt: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.accent + '55',
+    gap: Spacing.xs,
+  },
+  reflectTitle: { ...Typography.body, color: Colors.text, fontWeight: '600' },
+  reflectSub: { ...Typography.bodySmall, color: Colors.textSecondary },
 });
