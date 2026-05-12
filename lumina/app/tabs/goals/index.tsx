@@ -7,14 +7,15 @@ import {
   Modal,
   StyleSheet,
 } from 'react-native';
-import { useActiveGoals, useCreateGoal } from '../../../src/hooks/useGoals';
+import { useActiveGoals, useCreateGoal, usePauseGoal } from '../../../src/hooks/useGoals';
 import { GoalChatInterface } from '../../../src/components/goals/GoalChatInterface';
 import { Colors, Typography, Spacing, Radius } from '../../../src/constants/theme';
-import { GoalType, AppCategory, TimeBlock } from '../../../src/models';
+import { Goal, GoalType, AppCategory, TimeBlock } from '../../../src/models';
 
 export default function GoalsScreen() {
   const { data: goals = [] } = useActiveGoals();
   const createGoal = useCreateGoal();
+  const pauseGoal = usePauseGoal();
   const [showAddModal, setShowAddModal] = useState(false);
 
   async function handleGoalConfirmed(
@@ -71,6 +72,15 @@ export default function GoalsScreen() {
                   {Math.round(goal.dailyLimitSeconds / 60)} min/day limit
                 </Text>
               )}
+              {goal.enforcementEnabled && (
+                <Text style={styles.enforcedBadge}>● Enforced on device</Text>
+              )}
+              <Pressable
+                style={styles.pauseBtn}
+                onPress={() => pauseGoal.mutate(goal)}
+              >
+                <Text style={styles.pauseBtnText}>Pause</Text>
+              </Pressable>
             </View>
           ))
         )}
@@ -133,6 +143,16 @@ const styles = StyleSheet.create({
   goalTypeText: { ...Typography.caption, color: Colors.primaryLight, textTransform: 'uppercase' },
   goalInterpretation: { ...Typography.body, color: Colors.text },
   goalDetail: { ...Typography.bodySmall, color: Colors.textSecondary },
+  enforcedBadge: { ...Typography.caption, color: Colors.success },
+  pauseBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  pauseBtnText: { ...Typography.caption, color: Colors.textSecondary },
   addBtn: {
     position: 'absolute',
     bottom: Spacing.xl,

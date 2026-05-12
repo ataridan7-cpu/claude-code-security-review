@@ -88,6 +88,19 @@ const MockScreenTimeModule: NativeScreenTimeModule = {
   },
 };
 
+// ── Lazy-load blocking module (Android only) ──────────────────────────────────
+
+function getBlockingModule() {
+  if (Platform.OS !== 'android') return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { LuminaBlocking } = require('../../native-modules/android/AndroidUsageStats');
+    return LuminaBlocking;
+  } catch {
+    return null;
+  }
+}
+
 // ── Public ScreenTimeService API ──────────────────────────────────────────────
 
 export const ScreenTimeService = {
@@ -114,5 +127,56 @@ export const ScreenTimeService = {
   async getPickUpCount(): Promise<number> {
     if (Platform.OS !== 'ios') return 0;
     return getNativeModule().getPickUpCount();
+  },
+
+  // ── App blocking (Android only) ────────────────────────────────────────────
+
+  /**
+   * Register a bundle ID with the Android blocking service.
+   * Once registered, the service will overlay the app when it comes to the
+   * foreground after the daily limit (dailyLimitSeconds) has been consumed.
+   *
+   * No-op on iOS — iOS enforcement is handled by the DeviceActivity extension.
+   */
+  async registerBlockedApp(bundleId: string, dailyLimitSeconds: number): Promise<void> {
+    const blocking = getBlockingModule();
+    if (!blocking) return;
+    await blocking.registerBlockedApp(bundleId, dailyLimitSeconds);
+  },
+
+  /**
+   * Remove a bundle ID from the Android blocking service.
+   * Clears any active grace period for that app too.
+   *
+   * No-op on iOS.
+   */
+  async unregisterBlockedApp(bundleId: string): Promise<void> {
+    const blocking = getBlockingModule();
+    if (!blocking) return;
+    await blocking.unregisterBlockedApp(bundleId);
+  },
+
+  /**
+   * Start the foreground polling service.
+   * Should be called once after the first goal with targetApps is activated.
+   *
+   * No-op on iOS.
+   */
+  async startBlockingService(): Promise<void> {
+    const blocking = getBlockingModule();
+    if (!blocking) return;
+    await blocking.startService();
+  },
+
+  /**
+   * Stop the foreground polling service.
+   * Call when all app-limit goals are paused or deleted.
+   *
+   * No-op on iOS.
+   */
+  async stopBlockingService(): Promise<void> {
+    const blocking = getBlockingModule();
+    if (!blocking) return;
+    await blocking.stopService();
   },
 };

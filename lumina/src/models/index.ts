@@ -121,6 +121,8 @@ export interface Goal {
   activatedAt?: number;
   status: 'draft' | 'active' | 'completed' | 'paused';
   progress: GoalProgress[];
+  /** Android: true once targetApps are registered with LuminaBlockingService */
+  enforcementEnabled?: boolean;
 }
 
 // ── Focus Sessions ────────────────────────────────────────────────────────────

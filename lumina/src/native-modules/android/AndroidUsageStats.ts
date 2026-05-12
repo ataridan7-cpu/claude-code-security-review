@@ -4,7 +4,8 @@
  */
 import { NativeModules } from 'react-native';
 
-const { LuminaUsageStats: NativeLuminaUsageStats } = NativeModules;
+const { LuminaUsageStats: NativeLuminaUsageStats, LuminaBlocking: NativeLuminaBlocking } =
+  NativeModules;
 
 export const LuminaUsageStats = {
   requestPermission: (): Promise<string> =>
@@ -20,4 +21,29 @@ export const LuminaUsageStats = {
     NativeLuminaUsageStats.getUsageForRange(startMs, endMs),
 
   getPickUpCount: (): Promise<number> => Promise.resolve(0),
+};
+
+/**
+ * Bridge to LuminaBlockingModule (LuminaBlockingPackage).
+ *
+ * Manages the foreground polling service that detects blocked apps in the
+ * foreground and launches LuminaBlockedOverlayActivity on top of them.
+ *
+ * Blocked apps + dailyLimitSeconds stored in SharedPreferences on the native side.
+ */
+export const LuminaBlocking = {
+  startService: (): Promise<void> =>
+    NativeLuminaBlocking.startService(),
+
+  stopService: (): Promise<void> =>
+    NativeLuminaBlocking.stopService(),
+
+  registerBlockedApp: (bundleId: string, dailyLimitSeconds: number): Promise<void> =>
+    NativeLuminaBlocking.registerBlockedApp(bundleId, dailyLimitSeconds),
+
+  unregisterBlockedApp: (bundleId: string): Promise<void> =>
+    NativeLuminaBlocking.unregisterBlockedApp(bundleId),
+
+  getBlockedApps: (): Promise<string> =>
+    NativeLuminaBlocking.getBlockedApps(),
 };
