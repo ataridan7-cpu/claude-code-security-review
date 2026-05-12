@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { ScreenTimeService } from '../../src/services/screentime/ScreenTimeService';
+import { NotificationService } from '../../src/services/notifications/NotificationService';
 import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
 
 export default function PermissionsScreen() {
@@ -12,6 +13,8 @@ export default function PermissionsScreen() {
     const result = await ScreenTimeService.requestPermission();
     if (result === 'granted') {
       setStatus('granted');
+      // Request notification permission in the same flow — non-blocking if denied
+      await NotificationService.requestPermission();
       setTimeout(() => router.push('/onboarding/api-key'), 800);
     } else {
       setStatus('denied');
