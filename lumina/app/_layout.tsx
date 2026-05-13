@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
+import NetInfo from '@react-native-community/netinfo';
 import { getDatabase } from '../src/services/storage/DatabaseService';
 import { ClaudeService } from '../src/services/claude/ClaudeService';
+import { getPendingRequests, markAttempted, deleteRequest } from '../src/utils/offlineQueue';
 import { Colors } from '../src/constants/theme';
 
 const queryClient = new QueryClient({
@@ -15,20 +17,62 @@ const queryClient = new QueryClient({
   },
 });
 
+// Features whose queued requests can be replayed by invalidating their query cache.
+// When connectivity restores, we invalidate these so React Query re-fetches.
+const FEATURE_QUERY_KEYS: Record<string, string[][]> = {
+  daily_summary: [['screentime', 'today'], ['insights', 'latest']],
+  weekly_letter: [['insights', 'weekly']],
+  goal_progress: [['goals', 'active']],
+  mood_correlation: [['insights', 'mood-correlation']],
+};
+
+async function drainOfflineQueue(qc: QueryClient): Promise<void> {
+  try {
+    const pending = await getPendingRequests(10);
+    if (pending.length === 0) return;
+
+    const invalidated = new Set<string>();
+    for (const req of pending) {
+      const keys = FEATURE_QUERY_KEYS[req.feature];
+      if (keys) {
+        for (const key of keys) {
+          const keyStr = key.join('/');
+          if (!invalidated.has(keyStr)) {
+            qc.invalidateQueries({ queryKey: key });
+            invalidated.add(keyStr);
+          }
+        }
+        await deleteRequest(req.id);
+      } else {
+        // Unknown feature — mark attempted so it ages out after 3 tries
+        await markAttempted(req.id);
+      }
+    }
+  } catch {
+    // Non-critical — silent failure
+  }
+}
+
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
 
   useEffect(() => {
     async function init() {
-      // Initialize SQLite
       await getDatabase();
-      // Check for API key
       const keyExists = await ClaudeService.hasApiKey();
       setHasApiKey(keyExists);
       setIsReady(true);
     }
     init();
+
+    // Drain the offline queue whenever the device regains connectivity
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected && state.isInternetReachable) {
+        drainOfflineQueue(queryClient);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   if (!isReady) return null;
@@ -45,6 +89,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding/goal-setup" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="focus-session/[sessionId]"

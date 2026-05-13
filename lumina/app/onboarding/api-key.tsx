@@ -24,7 +24,7 @@ export default function ApiKeyScreen() {
     setIsSaving(true);
     try {
       await ClaudeService.saveApiKey(apiKey.trim());
-      router.replace('/tabs/dashboard');
+      router.replace('/onboarding/goal-setup');
     } catch {
       Alert.alert('Error', 'Could not save the key. Please try again.');
     } finally {
