@@ -38,6 +38,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     permissions: [
       'android.permission.PACKAGE_USAGE_STATS',
       'android.permission.FOREGROUND_SERVICE',
+      'android.permission.FOREGROUND_SERVICE_SPECIAL_USE',
+      'android.permission.SYSTEM_ALERT_WINDOW',
       'android.permission.RECEIVE_BOOT_COMPLETED',
       'android.permission.VIBRATE',
     ],
@@ -45,14 +47,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     'expo-secure-store',
-    [
-      'expo-notifications',
-      {
-        icon: './assets/notification-icon.png',
-        color: '#7C5CFC',
-        sounds: ['./assets/sounds/gentle-chime.wav'],
-      },
-    ],
     [
       'expo-splash-screen',
       {
