@@ -88,13 +88,24 @@ const MockScreenTimeModule: NativeScreenTimeModule = {
   },
 };
 
-// ── Lazy-load blocking module (Android only) ──────────────────────────────────
+// ── Lazy-load blocking modules ────────────────────────────────────────────────
 
 function getBlockingModule() {
   if (Platform.OS !== 'android') return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { LuminaBlocking } = require('../../native-modules/android/AndroidUsageStats');
+    return LuminaBlocking;
+  } catch {
+    return null;
+  }
+}
+
+function getIOSBlockingModule() {
+  if (Platform.OS !== 'ios') return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { LuminaBlocking } = require('../../native-modules/ios/IOSBlocking');
     return LuminaBlocking;
   } catch {
     return null;
@@ -178,5 +189,46 @@ export const ScreenTimeService = {
     const blocking = getBlockingModule();
     if (!blocking) return;
     await blocking.stopService();
+  },
+
+  // ── App blocking (iOS only) ────────────────────────────────────────────────
+
+  /**
+   * Present the system FamilyActivityPicker so the user can select apps to limit.
+   * Returns a base64-encoded FamilyActivitySelection string, or null if cancelled.
+   *
+   * No-op on Android.
+   */
+  async presentAppPicker(): Promise<string | null> {
+    const blocking = getIOSBlockingModule();
+    if (!blocking) return null;
+    return blocking.presentAppPicker();
+  },
+
+  /**
+   * Register a DeviceActivity daily threshold for the given FamilyActivitySelection.
+   * The DeviceActivityMonitor extension will apply a ManagedSettings shield when hit.
+   *
+   * No-op on Android.
+   */
+  async registerGoalLimit(
+    selectionData: string,
+    goalId: string,
+    dailyLimitSeconds: number
+  ): Promise<void> {
+    const blocking = getIOSBlockingModule();
+    if (!blocking) return;
+    await blocking.registerLimitForSelection(selectionData, goalId, dailyLimitSeconds);
+  },
+
+  /**
+   * Stop DeviceActivity monitoring and remove the stored selection for a goal.
+   *
+   * No-op on Android.
+   */
+  async removeGoalLimit(goalId: string): Promise<void> {
+    const blocking = getIOSBlockingModule();
+    if (!blocking) return;
+    await blocking.removeLimitForGoal(goalId);
   },
 };

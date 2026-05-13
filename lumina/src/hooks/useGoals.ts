@@ -40,10 +40,12 @@ export function useCreateGoal() {
       targetCategories?: AppCategory[];
       dailyLimitSeconds?: number;
       scheduledBlocks?: TimeBlock[];
+      iosActivitySelection?: string;
     }) => {
       let enforcementEnabled = false;
+      const goalId = uuidv4();
 
-      // Register with Android blocking service when the goal targets specific apps
+      // Android: register with the foreground blocking service
       if (
         Platform.OS === 'android' &&
         (partial.goalType === 'app_limit' || partial.goalType === 'category_limit') &&
@@ -57,8 +59,23 @@ export function useCreateGoal() {
         enforcementEnabled = true;
       }
 
+      // iOS: register a DeviceActivity threshold via FamilyControls
+      if (
+        Platform.OS === 'ios' &&
+        (partial.goalType === 'app_limit' || partial.goalType === 'category_limit') &&
+        partial.iosActivitySelection &&
+        partial.dailyLimitSeconds
+      ) {
+        await ScreenTimeService.registerGoalLimit(
+          partial.iosActivitySelection,
+          goalId,
+          partial.dailyLimitSeconds
+        );
+        enforcementEnabled = true;
+      }
+
       const goal: Goal = {
-        id: uuidv4(),
+        id: goalId,
         ...partial,
         status: 'active',
         createdAt: Date.now(),
@@ -80,13 +97,11 @@ export function usePauseGoal() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (goal: Goal) => {
-      // Unregister from Android blocking service
+      // Android: unregister from the foreground blocking service
       if (Platform.OS === 'android' && goal.enforcementEnabled) {
         for (const bundleId of goal.targetApps ?? []) {
           await ScreenTimeService.unregisterBlockedApp(bundleId);
         }
-
-        // If no other active goals have enforcement, stop the service
         const remaining = await getActiveGoals();
         const otherEnforced = remaining.some(
           (g) => g.id !== goal.id && g.enforcementEnabled && (g.targetApps?.length ?? 0) > 0
@@ -94,6 +109,11 @@ export function usePauseGoal() {
         if (!otherEnforced) {
           await ScreenTimeService.stopBlockingService();
         }
+      }
+
+      // iOS: stop DeviceActivity monitoring for this goal
+      if (Platform.OS === 'ios' && goal.enforcementEnabled) {
+        await ScreenTimeService.removeGoalLimit(goal.id);
       }
 
       await updateGoalStatus(goal.id, 'paused');

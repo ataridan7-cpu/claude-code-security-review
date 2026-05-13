@@ -8,9 +8,10 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useActiveGoals, useCreateGoal, usePauseGoal } from '../../../src/hooks/useGoals';
+import { buildGoalPayload, requestIOSAppSelection } from '../../../src/hooks/useConfirmGoal';
 import { GoalChatInterface } from '../../../src/components/goals/GoalChatInterface';
 import { Colors, Typography, Spacing, Radius } from '../../../src/constants/theme';
-import { Goal, GoalType, AppCategory, TimeBlock } from '../../../src/models';
+import { Goal } from '../../../src/models';
 
 export default function GoalsScreen() {
   const { data: goals = [] } = useActiveGoals();
@@ -22,24 +23,11 @@ export default function GoalsScreen() {
     toolName: string,
     toolInput: Record<string, unknown>
   ) {
-    if (toolName === 'create_app_limit_goal') {
-      await createGoal.mutateAsync({
-        naturalLanguageInput: '',
-        claudeInterpretation:
-          (toolInput.claudeExplanation as string) ?? 'App usage limit',
-        goalType: 'app_limit' as GoalType,
-        targetApps: (toolInput.targetBundleIds as string[]) ?? [],
-        targetCategories: (toolInput.targetCategories as AppCategory[]) ?? [],
-        dailyLimitSeconds: (toolInput.dailyLimitSeconds as number) ?? 3600,
-      });
-    } else if (toolName === 'create_time_block') {
-      await createGoal.mutateAsync({
-        naturalLanguageInput: '',
-        claudeInterpretation:
-          (toolInput.claudeExplanation as string) ?? 'Time block',
-        goalType: 'bedtime_block' as GoalType,
-        scheduledBlocks: (toolInput.scheduledBlocks as TimeBlock[]) ?? [],
-      });
+    // On iOS, present FamilyActivityPicker for app_limit goals before saving
+    const iosSelection = await requestIOSAppSelection(toolName);
+    const payload = buildGoalPayload(toolName, toolInput, iosSelection);
+    if (payload) {
+      await createGoal.mutateAsync(payload);
     }
     setShowAddModal(false);
   }

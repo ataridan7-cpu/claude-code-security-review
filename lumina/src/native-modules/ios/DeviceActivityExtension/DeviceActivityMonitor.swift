@@ -23,8 +23,21 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
   override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name,
                                         activity: DeviceActivityName) {
-    // An app hit a configured threshold — post local notification via shared defaults
     guard let defaults = UserDefaults(suiteName: appGroupId) else { return }
+
+    // Event name format: "lumina.limit.<goalId>"
+    let prefix = "lumina.limit."
+    guard event.rawValue.hasPrefix(prefix) else { return }
+    let goalId = String(event.rawValue.dropFirst(prefix.count))
+
+    // Apply the ManagedSettings shield for the goal's stored app selection
+    if let selectionData = defaults.string(forKey: "lumina_selection_\(goalId)"),
+       let data = Data(base64Encoded: selectionData),
+       let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) {
+      ManagedSettingsStore().shield.applications = selection.applicationTokens
+    }
+
+    // Also write a flag so the main app can surface the "limit reached" UI
     defaults.set(event.rawValue, forKey: "lumina_threshold_reached_\(event.rawValue)")
     defaults.set(Date().timeIntervalSince1970, forKey: "lumina_threshold_time_\(event.rawValue)")
     defaults.synchronize()

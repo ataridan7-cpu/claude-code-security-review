@@ -3,8 +3,8 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { GoalChatInterface } from '../../src/components/goals/GoalChatInterface';
 import { useCreateGoal } from '../../src/hooks/useGoals';
+import { buildGoalPayload, requestIOSAppSelection } from '../../src/hooks/useConfirmGoal';
 import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
-import { GoalType, AppCategory, TimeBlock } from '../../src/models';
 
 export default function GoalSetupScreen() {
   const createGoal = useCreateGoal();
@@ -14,25 +14,10 @@ export default function GoalSetupScreen() {
     toolName: string,
     toolInput: Record<string, unknown>
   ) {
-    if (toolName === 'create_app_limit_goal') {
-      await createGoal.mutateAsync({
-        naturalLanguageInput: '',
-        claudeInterpretation:
-          (toolInput.claudeExplanation as string) ?? 'App usage limit',
-        goalType: 'app_limit' as GoalType,
-        targetApps: (toolInput.targetBundleIds as string[]) ?? [],
-        targetCategories: (toolInput.targetCategories as AppCategory[]) ?? [],
-        dailyLimitSeconds: (toolInput.dailyLimitSeconds as number) ?? 3600,
-      });
-      setGoalCreated(true);
-    } else if (toolName === 'create_time_block') {
-      await createGoal.mutateAsync({
-        naturalLanguageInput: '',
-        claudeInterpretation:
-          (toolInput.claudeExplanation as string) ?? 'Time block',
-        goalType: 'bedtime_block' as GoalType,
-        scheduledBlocks: (toolInput.scheduledBlocks as TimeBlock[]) ?? [],
-      });
+    const iosSelection = await requestIOSAppSelection(toolName);
+    const payload = buildGoalPayload(toolName, toolInput, iosSelection);
+    if (payload) {
+      await createGoal.mutateAsync(payload);
       setGoalCreated(true);
     }
   }

@@ -123,6 +123,8 @@ export interface Goal {
   progress: GoalProgress[];
   /** Android: true once targetApps are registered with LuminaBlockingService */
   enforcementEnabled?: boolean;
+  /** iOS: base64-encoded FamilyActivitySelection used with DeviceActivity monitoring */
+  iosActivitySelection?: string;
 }
 
 // ── Focus Sessions ────────────────────────────────────────────────────────────
